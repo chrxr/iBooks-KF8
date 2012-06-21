@@ -12,7 +12,7 @@ If you run into any serious issues let me know.
   * File for conversion must be placed in /files folder
   * Output place in /repubbed folder
   
-Usage: Navigate to scripts file in the command line, then type "python ibooks_kf8.py"
+Usage: Navigate to 'script' folder in the command line, then type "python ibooks_kf8.py"
 
 Things you need for this to work:
 
