@@ -171,6 +171,7 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
                     if re.search(style_finder, ind_file_name):
                         style_loc = os.path.split(ind_file_name)[0]
                         
+                        
             #Loads files into BeautifulSoup
             opf_soup = load_file(ind_ext_path + opf_loc)
             
@@ -298,8 +299,10 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
                 paths_to_remove = []
                 paths_to_remove.append(smil_folder + '/')
                 for paths in paths_to_remove:
-                    
-                    list_builder.remove(paths)
+                    try:
+                        list_builder.remove(paths)
+                    except:
+                        continue
             new_file_locs[key] = new_file_list
 
 
@@ -412,7 +415,7 @@ def mover_shaker(c_dict, merged_loc, ind_ext_path):
 ########### OPF CONTENT EDITOR #############
 
 def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title):
-    opf_soup.find(attrs = {'id': cover_name }).extract()
+    #opf_soup.find(attrs = {'id': cover_name }).extract()
     title_tag = opf_soup.find('dc:title')
     title_tag.string = title
     result =  opf_soup.findAll(attrs = {'media-type': "application/smil+xml"})
@@ -436,11 +439,11 @@ def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title):
         new_href = 'xhtml/' + c_dict[i][-1]
         if i == 0:
             cond1 = c_dict[i][1]
-            opf_soup.find(attrs = {'id': cond1 }).extract()         
-            new_tag = opf_soup.new_tag("item", id = cover_name, href=new_href)
+            opf_soup.find(attrs = {'id': cond1 }).extract()     
+            new_tag = opf_soup.new_tag("item", id = cond1, href=new_href)
             new_tag['media-type'] = "application/xhtml+xml"
             insertion_point.append(new_tag)
-            new_tag = opf_soup.new_tag('itemref', idref = cover_name)
+            new_tag = opf_soup.new_tag('itemref', idref = cond1)
             
             spine_insertion.append(new_tag)
             try:
@@ -479,18 +482,25 @@ def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title):
 def css_inserter(height, width, ind_ext_path, style_loc):
     width = int(width)/2
     css = ("\n.pgl{height:" + height + "px;width:" + str(width) + "px;position:absolute;top:0;left:0;}\n.pgr{height:" + height + "px;width:" + str(width) + "px;position:absolute;top:0;left:" + str(width) + "px;}")
-    stylesheet = os.listdir(ind_ext_path + style_loc)
-    if len(stylesheet) == 1:
-        stylesheet_loc = ind_ext_path + style_loc + '/' + stylesheet[0]
+    stylesheets = os.listdir(ind_ext_path + style_loc)
+    if len(stylesheets) == 1:
+        stylesheet_loc = ind_ext_path + style_loc + '/' + stylesheets[0]
         with codecs.open(stylesheet_loc, mode='a', encoding = 'UTF-8') as style_soup:
             style_soup.write(css)
             style_soup.close()
+        print('Looks like you don\'t have a reset stylesheet. You should add one afterwards!')
     else:
-        print('You have more than one style sheet, this is not going to work!!\n')
-    
-        
-
-
+        for sheet in stylesheets:
+            if sheet != 'reset.css':
+                stylesheet_loc = ind_ext_path + style_loc + '/' + sheet
+                with codecs.open(stylesheet_loc, mode='a', encoding = 'UTF-8') as style_soup:
+                    style_soup.write(css)
+                    style_soup.close()
+                print('The new css was written in the file called: ', sheet, '\nIf this wasn\'t what you wanted, perhaps you have too many stylesheets?\n')
+                break
+            else:
+                continue
+                
 ######## MISC STUFF ############
 
 #LOADS A FILE INTO BEAUTIFUL SOUP
