@@ -5,8 +5,14 @@ Python script to convert iBooks fixed layout to KF8 files
 
 ==THIS IS A WORK IN PROGRESS==
 
+If anyone has any suggestions for simplifying this code it would be gratefully recieved.
+It does work, as long as all the conditions below are met.
+If you run into any serious issues let me know.
+
   * File for conversion must be placed in /files folder
   * Output place in /repubbed folder
+  
+Usage: Navigate to scripts file in the command line, then type "python ibooks_kf8.py"
 
 Things you need for this to work:
 
