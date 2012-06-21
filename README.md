@@ -3,9 +3,15 @@ iBooks-KF8
 
 Python script to convert iBooks fixed layout to KF8 files
 
+==THIS IS A WORK IN PROGRESS==
+
+  * File for conversion must be placed in /files folder
+  * Output place in /repubbed folder
+
 Things you need for this to work:
 
   * Python 3+ and BeautifulSoup4 module installed
+  * Folder structure must be as it is on git
   * Folder for content must be OPS. I'm working to get this more flexible.
   * Content files must be .xhtml
   * Viewport dimensions in content files must be listed as width then height, without px suffix
