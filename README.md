@@ -12,7 +12,9 @@ If you run into any serious issues let me know.
   * File for conversion must be placed in /files folder
   * Output place in /repubbed folder
   
-Usage: Navigate to 'script' folder in the command line, then type "python ibooks_kf8.py"
+Usage: Navigate to 'script' folder in the command line, then type "python ibooks_kf8.py [width] [height]"
+
+Width and height should be the pixel size of each page in iBooks (as described in the head of each content file).
 
 Things you need for this to work:
 
