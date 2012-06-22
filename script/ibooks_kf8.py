@@ -1,9 +1,13 @@
 #!/usr/bin/python3
 
-import os, shutil, zipfile, errno, re, io, codecs
+import os, shutil, zipfile, errno, re, io, codecs, sys
+
 from bs4 import BeautifulSoup
 
 def main():
+    width = int(sys.argv[1])
+    height = int(sys.argv[2])
+    print('THIS ISN"T working!!!')
     begin_path = 'files/'
     end_path = 'files/copy/'
     extract_path = 'files/extracted/'
@@ -27,7 +31,7 @@ def main():
     print('Opened Zip\n')
     #INSERT PROCESSING STUFF HERE
     #
-    processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc)
+    processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc, width, height)
     print('Finished processing\n')
     #
     #
@@ -44,6 +48,7 @@ def get_file_list(begin_path, file_list):
         current_ext = os.path.splitext(this_file)[1]
         if current_ext == '.epub':
             file_list.append(infile)
+
 
 #BACKUPS UP INPUT FILES, WORKS ON COPIES
 
@@ -134,7 +139,7 @@ def re_zip(repub_path, extract_path, extract_list, new_file_locs):
         
 #ALL THE MAIN STUFF HAPPENS HERE       
         
-def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
+def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc, width, height):
     opf_finder = re.compile('\.opf')
     smil_finder = re.compile('\.smil')
     ncx_finder = re.compile('\.ncx')
@@ -142,8 +147,9 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
     style_finder = re.compile('\.css')
     vp_finder = re.compile('name="viewport"')
     head_finder = re.compile('\</metadata\>')
-    width_finder = re.compile('width=[0-9]*,')
-    height_finder = re.compile('height=[0-9]*"')
+    total_width = str(width * 2)
+#    width_finder = re.compile('width=[0-9]*,')
+#    height_finder = re.compile('height=[0-9]*"')
     smil_list = []
     content_list = []
     spine_order = []
@@ -177,19 +183,19 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
             
                         
             #Obtains viewport info
-            a_content_file = io.open(ind_ext_path + content_list[-1], mode='r', encoding = 'UTF-8')
-            text = a_content_file.readlines()
-            a_content_file.close()
-            for line in text:
-                if re.search(vp_finder, line):
-                    height_f = height_finder.search(line)
-                    width_f = width_finder.search(line)
-                    height_b = height_f.group(0)
-                    width_b = width_f.group(0)
-                    width = re.search('[^a-z=].*[^,]', width_b)
-                    height = re.search('[^a-z=].*[^"]', height_b)
-                    real_width = str(int(width.group())*2)
-                    real_height = str(height.group())
+#            a_content_file = io.open(ind_ext_path + content_list[-1], mode='r', encoding = 'UTF-8')
+#            text = a_content_file.readlines()
+#            a_content_file.close()
+#            for line in text:
+#                if re.search(vp_finder, line):
+#                    height_f = height_finder.search(line)
+#                    width_f = width_finder.search(line)
+#                    height_b = height_f.group(0)
+#                    width_b = width_f.group(0)
+#                    width = re.search('[^a-z=].*[^,]', width_b)
+#                    height = re.search('[^a-z=].*[^"]', height_b)
+#                    real_width = str(int(width.group())*2)
+#                    real_height = str(height.group())
 
                     
 #############  END OF OBTAINING INFORMATION #################### 
@@ -222,7 +228,7 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
             
             new_opf_soup = opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title)
             
-            css_inserter(real_height, real_width, ind_ext_path, style_loc)
+            css_inserter(height, width, ind_ext_path, style_loc)
            
             #Copies OPF file
 
@@ -232,7 +238,7 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
 
             
             #Creates list of items to insert into <head> +  height and width and inserts them
-            orig_res = '<meta name="original-resolution" content="' + real_width + 'x' + real_height + '"/>'
+            orig_res = '<meta name="original-resolution" content="' + total_width + 'x' + str(height) + '"/>'
             head_insertion = ['<meta name="fixed-layout" content="true"/>', orig_res, '<meta name="book-type" content="children"/>']
             for line in split_file:
                 if re.search(head_finder, line):
@@ -365,10 +371,10 @@ def file_merger(blank_file, c_dict, title, ind_ext_path, merged_loc):
         else:
             file_name = 'page_' + str(a) + '.xhtml'
         c_dict[i].append(file_name)
-        file = codecs.open(merged_loc + file_name, 'w', 'utf-8')
+        new_file = codecs.open(merged_loc + file_name, 'w', 'utf-8')
         for line in new_soup:
-            file.write(line)
-        file.close()
+            new_file.write(line)
+        new_file.close()
         
 def insert_content(blank_soup, c1, c2, title):
     if c2 is not '':
@@ -480,8 +486,9 @@ def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title):
 ########## CSS INSERTER ###########
 
 def css_inserter(height, width, ind_ext_path, style_loc):
-    width = int(width)/2
-    css = ("\n.pgl{height:" + height + "px;width:" + str(width) + "px;position:absolute;top:0;left:0;}\n.pgr{height:" + height + "px;width:" + str(width) + "px;position:absolute;top:0;left:" + str(width) + "px;}")
+    height = str(height)
+    width = str(width)
+    css = ("\n.pgl{height:" + height + "px;width:" + width + "px;position:absolute;top:0;left:0;}\n.pgr{height:" + height + "px;width:" + width + "px;position:absolute;top:0;left:" + width + "px;}")
     stylesheets = os.listdir(ind_ext_path + style_loc)
     if len(stylesheets) == 1:
         stylesheet_loc = ind_ext_path + style_loc + '/' + stylesheets[0]
