@@ -4,6 +4,7 @@
 *.pydevproject
 *.metadata
 /archive
+/workshop
 =======
 # Build and Release Folders
 bin-debug/
