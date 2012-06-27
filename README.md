@@ -5,12 +5,6 @@ Python script to convert iBooks fixed layout to KF8 files
 
 ==THIS IS A WORK IN PROGRESS==
 
-UPDATE 27-06-12:
-  * You can now transform multiple files at the same time. Just put them all in the files folder
-  * You can now list height and width in any order in the content document <head>, with or without px suffix
-  
-####################  
-
 If anyone has any suggestions for simplifying this code it would be gratefully recieved.
 It does work, as long as all the conditions below are met.
 If you run into any serious issues let me know.
@@ -26,6 +20,7 @@ Things you need for this to work:
   * Folder structure must be as it is on git
   * Folder for content must be OPS. I'm working to get this more flexible.
   * Content files must be .xhtml
+  * Viewport dimensions in content files must be listed as width then height, without px suffix
   * Cover page should be called cover.xhtml
   * Must include a reset css file called reset.css
   * Best to use RGB Jpg files. Transparent PNG files won't work at all.
