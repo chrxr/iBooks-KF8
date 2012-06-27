@@ -29,6 +29,8 @@ Things you need for this to work:
   * Content files must be .xhtml
   * Cover page should be called cover.xhtml
   * Must include a reset css file called reset.css
+  * All other styles must be in stylesheet.css file. Only 1 master stylesheet allowed
+  * Styles should be placed in folder named /css
   * Best to use RGB Jpg files. Transparent PNG files won't work at all.
   
 Things it doesn't do:
