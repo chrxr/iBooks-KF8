@@ -3,6 +3,7 @@
 *.project
 *.pydevproject
 *.metadata
+/archive
 =======
 # Build and Release Folders
 bin-debug/
