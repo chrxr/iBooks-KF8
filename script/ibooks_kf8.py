@@ -10,93 +10,85 @@ def main():
     repub_path = 'files/repubbed/'
     blank_file = 'files/blank.xhtml'
     merged_loc = 'files/merged/'
-    file_list = []
     zip_list = [] 
-    file_locs = {} 
     new_file_locs = {}
-    extract_list = {}
-    get_file_list(begin_path, file_list)
+    file_list = get_file_list(begin_path)
     print('Got file list\n')
-    copy_file(file_list, begin_path, end_path)
-    print('Copied EPUBs\n')
-    ext_changer(end_path)
-    print('Changed to Zip\n')
-    zip_check(end_path, zip_list)
-    print('Checked we only have Zips\n')
-    zip_opener(end_path, zip_list, extract_path, extract_list, file_locs)
-    print('Opened Zip\n')
-    #INSERT PROCESSING STUFF HERE
-    #
-    processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc)
-    print('Finished processing\n')
-    #
-    #
-    re_zip(repub_path, extract_path, extract_list, new_file_locs)
-    print('All done\n')
+    for infile in file_list:
+        file_locs = {} 
+        copy_file(infile, begin_path, end_path)
+        print('Copied EPUB\n')
+        infile = ext_changer(end_path, infile)
+        print('Changed to Zip\n')
+        zip_check(end_path, zip_list, infile)
+        print('Checked we only have Zips\n')
+        extract_list = zip_opener(end_path, infile, extract_path, file_locs)
+        print('Opened Zip\n')
+        #INSERT PROCESSING STUFF HERE
+        #
+        processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc)
+        print('Finished processing\n')
+        #
+        #
+        re_zip(repub_path, extract_path, extract_list, new_file_locs)
+        print('All done\n')
 
     
 #LISTS INPUT FILES
     
-def get_file_list(begin_path, file_list):
+def get_file_list(begin_path):
+    file_list = []
     listing = os.listdir(begin_path)
     for infile in listing:
         this_file = infile
         current_ext = os.path.splitext(this_file)[1]
         if current_ext == '.epub':
             file_list.append(infile)
+    return file_list
 
 #BACKUPS UP INPUT FILES, WORKS ON COPIES
 
-def copy_file(file_list, begin_path, end_path):
-    if len(file_list[0]) > 1:
-        for infile in file_list:
-            src = begin_path + infile
-            dst = end_path
-            shutil.copy2(src, dst)
-    else:
+def copy_file(infile, begin_path, end_path):
+        src = begin_path + infile
         dst = end_path
-        shutil.copy2(file_list, dst)
+        shutil.copy2(src, dst)
 
         # Will have to revisit this as it overwrites files. Need to add exception
 
 #CHANGES EPUB EXTENSIONS TO ZIP, AND VICE VERSA
-def ext_changer(end_path):
-    listing = os.listdir(end_path)
-    for infile in listing:
-        base = os.path.splitext(infile)[0]
-        current_ext = os.path.splitext(infile)[1]
-        if current_ext == '.epub':
-            file_path = end_path + infile
-            new_file = end_path + base + '.zip'
-            os.rename(file_path, new_file)
-        elif current_ext == '.zip':
-            file_path = end_path + infile
-            new_file = end_path + base + '.epub'
-            os.rename(file_path, new_file)
-        else:
-            continue
+def ext_changer(end_path, infile):
+    base = os.path.splitext(infile)[0]
+    current_ext = os.path.splitext(infile)[1]
+    if current_ext == '.epub':
+        file_path = end_path + infile
+        new_file = end_path + base + '.zip'
+        os.rename(file_path, new_file)
+    elif current_ext == '.zip':
+        file_path = end_path + infile
+        new_file = end_path + base + '.epub'
+        os.rename(file_path, new_file)
+    return new_file
 
 #CHECKS FOR ZIP FILES AND SAVES THEM TO LIST
 
-def zip_check(end_path, zip_list):
-    listing = os.listdir(end_path)
-    for infile in listing:
+def zip_check(end_path, zip_list, infile):
         current_ext = os.path.splitext(infile)[1]
         if current_ext == '.zip':
             zip_list.append(infile)
             
 #OPENS ZIP FILES, CREATES DIR, CREATES DICT OF FILE LOCATIONS, AND EXTRACTS FILES TO FOLDER
 
-def zip_opener(end_path, zip_list, extract_path, extract_list, file_locs):
-    for infile in zip_list:
-        zip_path = end_path + infile
-        zipper = zipfile.ZipFile(zip_path, 'r')
-        file_name = os.path.splitext(infile)[0]
-        file_locs[file_name] = zipper.namelist()
-        new_path = extract_path + file_name
+def zip_opener(end_path, infile, extract_path, file_locs):
+        extract_list = {}
+        zipper = zipfile.ZipFile(infile, 'r')
+        file_name = os.path.split(infile)[1]
+        minus_ext = os.path.splitext(file_name)[0]
+        file_locs[minus_ext] = zipper.namelist()
+        new_path = extract_path + minus_ext
         mkdir_p(new_path)
         zipper.extractall(path = new_path)
-        extract_list[file_name] = new_path
+        extract_list[minus_ext] = new_path
+        return extract_list
           
 ## REZIPS FILE AND CONVERTS TO EPUB
 
@@ -142,8 +134,10 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
     style_finder = re.compile('\.css')
     vp_finder = re.compile('name="viewport"')
     head_finder = re.compile('\</metadata\>')
-    width_finder = re.compile('width=[0-9]*,')
-    height_finder = re.compile('height=[0-9]*"')
+    px_width_finder = re.compile('width=[0-9]*px[^A-Za-z0-9]{1}')
+    px_height_finder = re.compile('height=[0-9]*px[^A-Za-z0-9]{1}')
+    width_finder = re.compile('width=[0-9]*[^A-Za-z0-9]{1}')
+    height_finder = re.compile('height=[0-9]*[^A-Za-z0-9]{1}')
     smil_list = []
     content_list = []
     spine_order = []
@@ -153,7 +147,9 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
     
     #finding locations of key files & assigning to variables / lists
     for key in extract_list:
+        print(key)
         for index, value in file_locs.items():
+            print(index)
             if key == index:
                 ind_ext_path = extract_list[key] + '/'
                 for ind_file_name in value:
@@ -186,8 +182,8 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
                     width_f = width_finder.search(line)
                     height_b = height_f.group(0)
                     width_b = width_f.group(0)
-                    width = re.search('[^a-z=].*[^,]', width_b)
-                    height = re.search('[^a-z=].*[^"]', height_b)
+                    width = re.search('[^a-z=].*[^A-Za-z,"\']', width_b)
+                    height = re.search('[^a-z=].*[^A-Za-z,"\']', height_b)
                     real_width = str(int(width.group())*2)
                     real_height = str(height.group())
 
