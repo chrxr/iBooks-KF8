@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, shutil, zipfile, errno, re, io, codecs
+import os, shutil, zipfile, errno, re, io, codecs, sys
 from bs4 import BeautifulSoup
 
 def main():
@@ -130,7 +130,8 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
     opf_finder = re.compile('\.opf')
     smil_finder = re.compile('\.smil')
     ncx_finder = re.compile('\.ncx')
-    content_finder = re.compile('\.xhtml|\.html')
+    x_content_finder = re.compile('\.xhtml')
+    h_content_finder = re.compile('\.html')
     style_finder = re.compile('\.css')
     vp_finder = re.compile('name="viewport"')
     head_finder = re.compile('\</metadata\>')
@@ -147,27 +148,37 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
     
     #finding locations of key files & assigning to variables / lists
     for key in extract_list:
-        print(key)
         for index, value in file_locs.items():
-            print(index)
             if key == index:
                 ind_ext_path = extract_list[key] + '/'
                 for ind_file_name in value:
                     if re.search(opf_finder, ind_file_name):
                         opf_loc = ind_file_name
                         opf_name = os.path.split(opf_loc)[1]
+                        content_dir = os.path.dirname(opf_loc)
                     if re.search(smil_finder, ind_file_name):
                         smil_list.append(ind_file_name)
                         smil_folder = os.path.split(smil_list[0])[0]
                     if re.search(ncx_finder, ind_file_name):
                         ncx_loc = ind_file_name
-                    if re.search(content_finder, ind_file_name):
+                    if re.search(x_content_finder, ind_file_name):
                         content_loc = os.path.split(ind_file_name)[0]
+                        content_ext = os.path.splitext(ind_file_name)[1]
                         content_list.append(ind_file_name)
+                    if re.search(h_content_finder, ind_file_name):
+                        try:
+                            if re.search(x_content_finder, content_list[0]):
+                                print('ERROR: You have a mixture of html and xhtml docs. You can only use one or the other.')
+                                sys.exit()
+                        except:
+                            content_loc = os.path.split(ind_file_name)[0]
+                            content_ext = os.path.splitext(ind_file_name)[1]
+                            content_list.append(ind_file_name)
                     if re.search(style_finder, ind_file_name):
                         style_loc = os.path.split(ind_file_name)[0]
-                        
-                        
+            content_root = os.path.basename(content_loc) 
+            print(content_root)
+             
             #Loads files into BeautifulSoup
             opf_soup = load_file(ind_ext_path + opf_loc)
             
@@ -211,12 +222,12 @@ def processing(extract_list, file_locs, new_file_locs, blank_file, merged_loc):
             title = result.find(text=True)
             
             #As mentioned above, files merged into spreads, returns c_dict with appended new file names (as last index for each spread, either 2 or 6)
-            file_merger(blank_file, c_dict, title, ind_ext_path,  merged_loc)
+            file_merger(blank_file, c_dict, title, ind_ext_path,  merged_loc, content_dir, content_ext)
             
             #Deleting old file and moving new files into content location
-            mover_shaker(c_dict, merged_loc, ind_ext_path)
+            mover_shaker(c_dict, merged_loc, ind_ext_path, content_dir, content_root)
             
-            new_opf_soup = opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title)
+            new_opf_soup = opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title, content_root)
             
             css_inserter(real_height, real_width, ind_ext_path, style_loc)
            
@@ -325,8 +336,8 @@ def contents_dic(spine_order, opf_soup):
 
 ############ MERGES PAGES INTO SPREADS  ###########
 
-def file_merger(blank_file, c_dict, title, ind_ext_path, merged_loc):
-    file_loc = ind_ext_path + 'OPS/'
+def file_merger(blank_file, c_dict, title, ind_ext_path, merged_loc, content_dir, content_ext):
+    file_loc = ind_ext_path + content_dir + '/'
     for i in range(0, len(c_dict)):
         if i == 0:
             blank_soup =  load_file(blank_file)
@@ -357,9 +368,9 @@ def file_merger(blank_file, c_dict, title, ind_ext_path, merged_loc):
         else:
             a = str(i) 
         if i == 0:
-            file_name = 'cover.xhtml'
+            file_name = 'cover' + content_ext
         else:
-            file_name = 'page_' + str(a) + '.xhtml'
+            file_name = 'page_' + str(a) + content_ext
         c_dict[i].append(file_name)
         file = codecs.open(merged_loc + file_name, 'w', 'utf-8')
         for line in new_soup:
@@ -389,28 +400,28 @@ def extract_content(content_file):
 
 ########### MOVER CODE: Deletes old content files, moves new files ###########
 
-def mover_shaker(c_dict, merged_loc, ind_ext_path):
-    file_loc = ind_ext_path + 'OPS/'
+def mover_shaker(c_dict, merged_loc, ind_ext_path, content_dir, content_root):
+    file_loc = ind_ext_path + content_dir + '/'
     for i in range(0, len(c_dict)):
             if i == 0:
                 name = file_loc + c_dict[i][2]
                 os.remove(name)
-                shutil.move(merged_loc + c_dict[i][-1], file_loc + 'xhtml/')               
+                shutil.move(merged_loc + c_dict[i][-1], file_loc + content_root + '/')               
             else:
                 try:
                     name1 = file_loc + c_dict[i][2]
                     name2 = file_loc + c_dict[i][5]
                     os.remove(name1)
                     os.remove(name2)
-                    shutil.move(merged_loc + c_dict[i][-1], file_loc + 'xhtml/')
+                    shutil.move(merged_loc + c_dict[i][-1], file_loc + content_root + '/')
                 except:
                     name = file_loc + c_dict[i][2]
                     os.remove(name)
-                    shutil.move(merged_loc + c_dict[i][-1], file_loc + 'xhtml/')
+                    shutil.move(merged_loc + c_dict[i][-1], file_loc + content_root + '/')
     
 ########### OPF CONTENT EDITOR #############
 
-def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title):
+def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title, content_root):
     #opf_soup.find(attrs = {'id': cover_name }).extract()
     title_tag = opf_soup.find('dc:title')
     title_tag.string = title
@@ -432,7 +443,7 @@ def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title):
         insertion_point = opf_soup.manifest
         spine_insertion = opf_soup.spine
         new_id = "page" + a
-        new_href = 'xhtml/' + c_dict[i][-1]
+        new_href = content_root + '/' + c_dict[i][-1]
         if i == 0:
             cond1 = c_dict[i][1]
             opf_soup.find(attrs = {'id': cond1 }).extract()     
@@ -468,7 +479,7 @@ def opf_content_editor(c_dict, opf_soup, content_loc, cover_name, title):
                 spine_insertion.append(new_tag)
     try:
         result = opf_soup.find(attrs={'type':'text'})
-        result['href'] = 'xhtml/' + c_dict[1][-1]
+        result['href'] = content_root + '/' + c_dict[1][-1]
     except:
         print('You have no guide item with the type "text"\n')
     return opf_soup
